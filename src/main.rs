@@ -4,7 +4,7 @@
 use crossbeam::atomic::AtomicCell;
 use pc_keyboard::DecodedKey;
 use pluggable_interrupt_os::{vga_buffer::clear_screen, HandlerTable};
-use simple_swim_template::SwimInterface;
+use simple_swim_tucker::SwimInterface;
 
 #[no_mangle]
 pub extern "C" fn _start() -> ! {
@@ -21,6 +21,7 @@ static TICKED: AtomicCell<bool> = AtomicCell::new(false);
 
 fn cpu_loop() -> ! {
     let mut kernel = SwimInterface::default();
+    kernel.init();
     loop {
         if let Ok(_) = TICKED.compare_exchange(true, false) {
             kernel.tick();
