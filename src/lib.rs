@@ -6,8 +6,8 @@ use pluggable_interrupt_os::{serial_print, serial_println, vga_buffer::{
     is_drawable, plot, plot_num, plot_str, Color, ColorCode, BUFFER_HEIGHT, BUFFER_WIDTH
 }};
 
-const WINDOW_HEIGHT : usize = BUFFER_HEIGHT /2;
-const WINDOW_WIDTH : usize = BUFFER_WIDTH / 2;
+const WINDOW_HEIGHT : usize = BUFFER_HEIGHT / 2 - 1;
+const WINDOW_WIDTH : usize = BUFFER_WIDTH / 2 - 1;
 const START_ROW : usize = 1;
 const HORIZONTAL_WINDOW_COUNT : usize = 2;
 
@@ -69,10 +69,10 @@ impl Default for SwimInterface {
         Self {
             windows : [Window::default(); 4],
             active_window : 0,
-            window_height : BUFFER_HEIGHT / 2,
-            window_width : BUFFER_WIDTH / 2,
-            col: BUFFER_WIDTH / 2,
-            row: BUFFER_HEIGHT / 2,
+            window_height : WINDOW_HEIGHT,
+            window_width : WINDOW_WIDTH,
+            col: 0,
+            row: 0,
         }
     }
 }
@@ -113,30 +113,66 @@ impl SwimInterface {
         let window_inf = self.windows[self.active_window];
         let change_pos = (window_inf.row * WINDOW_WIDTH) + window_inf.col;
         let old_char = self.windows[self.active_window].letters[change_pos];
+        self.draw_border_inactive(self.windows[self.active_window], (self.active_window + 1) as isize);
         plot(old_char, self.windows[self.active_window].base_x + self.windows[self.active_window].col, self.windows[self.active_window].base_y + self.windows[self.active_window].row, ColorCode::new(Color::Black, Color::Black));
         self.active_window = new_id;
         let current_wind_info  = self.windows[new_id];
+        self.draw_border_active(current_wind_info, (self.active_window + 1) as isize);
+        self.col = current_wind_info.base_x + current_wind_info.col;
+        self.row = current_wind_info.base_y + current_wind_info.row;
+        plot(' ', self.col, self.row, ColorCode::new(Color::Green, Color::Green));
+    }
+
+    fn draw_border_active(&mut self, windinf : Window, wind_id : isize) {
         let mut h = 1;
         while h < self.window_height {
-            plot('*', current_wind_info.base_x - 1, h + current_wind_info.base_y -1, ColorCode::new(Color::Green, Color::LightGreen));
+            plot('.', windinf.base_x - 1, h + windinf.base_y -1, ColorCode::new(Color::Green, Color::LightGreen));
+            plot('.', self.window_width + windinf.base_x - 1, h + windinf.base_y - 2, ColorCode::new(Color::Green, Color::LightGreen));
             h += 1;
         }
         let mut i = 0;
         while i < ((self.window_width/2)-2) {
-            plot('*', i + current_wind_info.base_x - 1, current_wind_info.base_y - 1, ColorCode::new(Color::Green, Color::LightGreen));
+            plot('.', i + windinf.base_x - 1, windinf.base_y - 1, ColorCode::new(Color::Green, Color::LightGreen));
+            plot('.', i + windinf.base_x - 1, self.window_height + windinf.base_y - 2, ColorCode::new(Color::Green, Color::LightGreen));
             i+=1
         }
-        plot('F', i + current_wind_info.base_x - 1, current_wind_info.base_y - 1, ColorCode::new(Color::Green, Color::Black));
+        plot('F', i + windinf.base_x - 1, windinf.base_y - 1, ColorCode::new(Color::Green, Color::Black));
+        plot('.', i + windinf.base_x - 1, self.window_height + windinf.base_y - 2, ColorCode::new(Color::Green, Color::LightGreen));
         i+=1;
-        plot_num((new_id + 1) as isize, i + current_wind_info.base_x - 1, current_wind_info.base_y - 1, ColorCode::new(Color::Green, Color::Black));
+        plot_num(wind_id, i + windinf.base_x - 1, windinf.base_y - 1, ColorCode::new(Color::Green, Color::Black));
+        plot('.', i + windinf.base_x - 1, self.window_height + windinf.base_y - 2, ColorCode::new(Color::Green, Color::LightGreen));
         i+=1;
-        while i < self.window_width {
-            plot('*', i + current_wind_info.base_x - 1, current_wind_info.base_y - 1, ColorCode::new(Color::Green, Color::LightGreen));
+        while i < self.window_width+1 {
+            plot('.', i + windinf.base_x - 1, windinf.base_y - 1, ColorCode::new(Color::Green, Color::LightGreen));
+            plot('.', i + windinf.base_x - 1, self.window_height + windinf.base_y - 2, ColorCode::new(Color::Green, Color::LightGreen));
+            
             i+=1
         }
-        self.col = current_wind_info.base_x + current_wind_info.col;
-        self.row = current_wind_info.base_y + current_wind_info.row;
-        plot(' ', self.col, self.row, ColorCode::new(Color::Green, Color::Green));
+    }
+    fn draw_border_inactive(&mut self, windinf : Window, wind_id : isize) {
+        let mut h = 1;
+        while h < self.window_height {
+            plot('.', windinf.base_x - 1, h + windinf.base_y -1, ColorCode::new(Color::Green, Color::Black));
+            plot('.', self.window_width + windinf.base_x - 1, h + windinf.base_y - 2, ColorCode::new(Color::Green, Color::Black));
+            h += 1;
+        }
+        let mut i = 0;
+        while i < ((self.window_width/2)-2) {
+            plot('.', i + windinf.base_x - 1, windinf.base_y - 1, ColorCode::new(Color::Green, Color::Black));
+            plot('.', i + windinf.base_x - 1, self.window_height + windinf.base_y - 2, ColorCode::new(Color::Green, Color::Black));
+            i+=1
+        }
+        plot('F', i + windinf.base_x - 1, windinf.base_y - 1, ColorCode::new(Color::Green, Color::Black));
+        plot('.', i + windinf.base_x - 1, self.window_height + windinf.base_y - 2, ColorCode::new(Color::Green, Color::Black));
+        i+=1;
+        plot_num(wind_id, i + windinf.base_x - 1, windinf.base_y - 1, ColorCode::new(Color::Green, Color::Black));
+        plot('.', i + windinf.base_x - 1, self.window_height + windinf.base_y - 2, ColorCode::new(Color::Green, Color::Black));
+        i+=1;
+        while i < self.window_width+1 {
+            plot('.', i + windinf.base_x - 1, windinf.base_y - 1, ColorCode::new(Color::Green, Color::Black));
+            plot('.', i + windinf.base_x - 1, self.window_height + windinf.base_y - 2, ColorCode::new(Color::Green, Color::Black));
+            i+=1
+        }
     }
 
     fn constr(&mut self) {
@@ -150,12 +186,12 @@ impl SwimInterface {
             while f < HORIZONTAL_WINDOW_COUNT {
                 let mut h = 1;
                 while h < self.window_height {
-                    plot('*', f * (WINDOW_WIDTH), h + x, ColorCode::new(Color::Green, Color::Black));
+                    plot('.', f * (WINDOW_WIDTH), h + x, ColorCode::new(Color::Green, Color::Black));
                     h += 1;
                 }
                 let mut i = 0;
                 while i < ((self.window_width/2)-2) {
-                    plot('*', i + f * WINDOW_WIDTH, x, ColorCode::new(Color::Green, Color::Black));
+                    plot('.', i + f * WINDOW_WIDTH, x, ColorCode::new(Color::Green, Color::Black));
                     i+=1
                 }
                 plot('F', i + f * WINDOW_WIDTH, x, ColorCode::new(Color::Green, Color::Black));
@@ -163,7 +199,7 @@ impl SwimInterface {
                 plot_num(g as isize, i + f * WINDOW_WIDTH, x, ColorCode::new(Color::Green, Color::Black));
                 i+=1;
                 while i < self.window_width {
-                    plot('*', i + f * WINDOW_WIDTH, x, ColorCode::new(Color::Green, Color::Black));
+                    plot('.', i + f * WINDOW_WIDTH, x, ColorCode::new(Color::Green, Color::Black));
                     i+=1
                 }
                 self.windows[&g-1].base_y = x + 1;
@@ -173,14 +209,14 @@ impl SwimInterface {
             }
             let mut h = 1;
             while h < self.window_height {
-                plot('*', 2 * (WINDOW_WIDTH) - 1, h + x, ColorCode::new(Color::Green, Color::Black));
+                plot('.', HORIZONTAL_WINDOW_COUNT * (WINDOW_WIDTH), h + x, ColorCode::new(Color::Green, Color::Black));
                 h += 1;
             }
-            x += WINDOW_HEIGHT;
+            x += WINDOW_HEIGHT-1;
         }
         let mut i = 0;
         while i < WINDOW_WIDTH * 2 {
-            plot('*', i, WINDOW_HEIGHT * 2, ColorCode::new(Color::Green, Color::Black));
+            plot('.', i, WINDOW_HEIGHT * 2 - 1, ColorCode::new(Color::Green, Color::Black));
             i+=1
         }
     }
@@ -240,7 +276,7 @@ impl SwimInterface {
             serial_println!("{}", change_pos);
             self.windows[self.active_window].letters[change_pos] = key;
             plot(key, window_inf.base_x + window_inf.col, window_inf.base_y + window_inf.row, ColorCode::new(Color::Green, Color::Black));
-            if window_inf.col < self.window_width - 2 {
+            if window_inf.col < WINDOW_WIDTH - 2 {
                 self.windows[self.active_window].col += 1;
             } else {
                 self.windows[self.active_window].col = 0;
